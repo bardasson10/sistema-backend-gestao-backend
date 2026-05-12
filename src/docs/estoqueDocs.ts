@@ -220,6 +220,7 @@ const estoqueFiltrosSyncQuerySchema = z.object({
     tipoMovimentacao: z.enum(['entrada', 'saida', 'ajuste', 'devolucao']).optional(),
     dataInicio: z.string().datetime().optional(),
     dataFim: z.string().datetime().optional(),
+    excludeTipoProdutoNome: z.string().optional(),
     page: z.coerce.number().int().positive().optional(),
     limit: z.coerce.number().int().positive().optional()
 });
@@ -238,6 +239,7 @@ export function registerEstoqueRoutes(registry: OpenAPIRegistry) {
                 loteProducaoId: z.uuid().optional(),
                 tamanhoId: z.uuid().optional(),
                 corId: z.uuid().optional(),
+                excludeTipoProdutoNome: z.string().optional(),
                 page: z.coerce.number().int().positive().optional(),
                 limit: z.coerce.number().int().positive().optional()
             })
@@ -512,6 +514,7 @@ export function registerEstoqueRoutes(registry: OpenAPIRegistry) {
                 estoqueRoloId: z.uuid().optional(),
                 fornecedorId: z.uuid().optional(),
                 corId: z.uuid().optional(),
+                excludeTipoProdutoNome: z.string().optional(),
                 tipoMovimentacao: z.enum(['entrada', 'saida', 'ajuste', 'devolucao']).optional(),
                 dataInicio: z.string().datetime().optional(),
                 dataFim: z.string().datetime().optional(),
@@ -602,6 +605,7 @@ export function registerEstoqueRoutes(registry: OpenAPIRegistry) {
                 situacao: z.enum(['disponivel', 'reservado', 'em_uso', 'descartado']).optional(),
                 estoqueRoloId: z.uuid().optional(),
                 fornecedorId: z.uuid().optional(),
+                excludeTipoProdutoNome: z.string().optional(),
                 tipoMovimentacao: z.enum(['entrada', 'saida', 'ajuste', 'devolucao']).optional(),
                 dataInicio: z.string().datetime().optional(),
                 dataFim: z.string().datetime().optional(),

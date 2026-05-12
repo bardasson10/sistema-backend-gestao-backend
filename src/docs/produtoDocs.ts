@@ -476,6 +476,14 @@ export function registerProdutoRoutes(registry: OpenAPIRegistry) {
         tags: ['Produtos'],
         summary: 'Listar produtos',
         security: [{ bearerAuth: [] }],
+        request: {
+            query: z.object({
+                tipoProdutoId: z.uuid().optional(),
+                tipoProdutoNome: z.string().optional(),
+                page: z.coerce.number().int().positive().optional(),
+                limit: z.coerce.number().int().positive().optional()
+            })
+        },
         responses: {
             200: {
                 description: 'Lista de produtos',

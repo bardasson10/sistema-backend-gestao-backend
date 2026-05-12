@@ -8,17 +8,36 @@ class ListAllEstoqueCorteService {
         tamanhoId?: string,
         corId?: string,
         page?: number | string,
-        limit?: number | string
+        limit?: number | string,
+        excludeTipoProdutoNome?: string
     ): Promise<PaginatedResponse<any>> {
         const { page: pageNumber, limit: pageLimit, skip } = parsePaginationParams(page, limit);
 
-        const where = {
+        const where: any = {
             quantidadeDisponivel: { gt: 0 },
             ...(produtoId && { produtoId }),
             ...(loteProducaoId && { loteProducaoId }),
             ...(tamanhoId && { tamanhoId }),
             ...(corId && { corId })
         };
+
+        // Excluir produtos por tipo (ex.: "Forro") quando solicitado
+        if (excludeTipoProdutoNome && excludeTipoProdutoNome.trim()) {
+            where.produto = {
+                is: {
+                    tipo: {
+                        is: {
+                            nome: {
+                                not: {
+                                    equals: excludeTipoProdutoNome.trim(),
+                                    mode: "insensitive"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+        }
 
         const [itens, total] = await Promise.all([
             prismaClient.estoqueCorte.findMany({

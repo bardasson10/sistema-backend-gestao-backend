@@ -20,7 +20,7 @@ class CreateEstoqueRoloController {
 
 class ListAllEstoqueRoloController {
     async handle(req: Request, res: Response) {
-        const { tecidoId, situacao, page, limit, estoqueRoloId, fornecedorId, corId, tipoMovimentacao, dataInicio, dataFim } = req.query;
+        const { tecidoId, situacao, page, limit, estoqueRoloId, fornecedorId, corId, tipoMovimentacao, dataInicio, dataFim, excludeTipoProdutoNome } = req.query;
         const rolos = await new ListAllEstoqueRoloService().execute(
             tecidoId as string,
             situacao as string,
@@ -31,7 +31,8 @@ class ListAllEstoqueRoloController {
             corId as string,
             tipoMovimentacao as string,
             dataInicio as string,
-            dataFim as string
+            dataFim as string,
+            excludeTipoProdutoNome as string | undefined
         );
         return res.json(rolos);
     }
@@ -70,7 +71,7 @@ class DeleteEstoqueRoloController {
 
 class GetRelatorioEstoqueController {
     async handle(req: Request, res: Response) {
-        const { tecidoId, situacao, estoqueRoloId, fornecedorId, corId, tipoMovimentacao, dataInicio, dataFim, page, limit } = req.query;
+        const { tecidoId, situacao, estoqueRoloId, fornecedorId, corId, tipoMovimentacao, dataInicio, dataFim, page, limit, excludeTipoProdutoNome } = req.query;
         const relatorio = await new GetRelatorioEstoqueService().execute(
             tecidoId as string,
             situacao as string,
@@ -81,7 +82,8 @@ class GetRelatorioEstoqueController {
             dataInicio as string,
             dataFim as string,
             page as string | number | undefined,
-            limit as string | number | undefined
+            limit as string | number | undefined,
+            excludeTipoProdutoNome as string | undefined
         );
         return res.json(relatorio);
     }
@@ -89,7 +91,7 @@ class GetRelatorioEstoqueController {
 
 class GetResumoEstoqueRolosController {
     async handle(req: Request, res: Response) {
-        const { fornecedorId, tecidoId, corId, page, limit, estoqueRoloId, tipoMovimentacao, dataInicio, dataFim } = req.query;
+        const { fornecedorId, tecidoId, corId, page, limit, estoqueRoloId, tipoMovimentacao, dataInicio, dataFim, excludeTipoProdutoNome } = req.query;
         const resumo = await new GetResumoEstoqueRolosService().execute(
             fornecedorId as string,
             tecidoId as string,
@@ -99,7 +101,8 @@ class GetResumoEstoqueRolosController {
             estoqueRoloId as string,
             tipoMovimentacao as string,
             dataInicio as string,
-            dataFim as string
+            dataFim as string,
+            excludeTipoProdutoNome as string | undefined
         );
         return res.json(resumo);
     }

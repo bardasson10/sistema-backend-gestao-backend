@@ -49,12 +49,29 @@ class CreateProdutoService {
 }
 
 class ListAllProdutoService {
-    async execute(tipoProdutoId?: string, page?: number | string, limit?: number | string): Promise<PaginatedResponse<any>> {
+    async execute(
+        tipoProdutoId?: string,
+        page?: number | string,
+        limit?: number | string,
+        tipoProdutoNome?: string
+    ): Promise<PaginatedResponse<any>> {
         const { page: pageNumber, limit: pageLimit, skip } = parsePaginationParams(page, limit);
+
+        const where: any = {
+            ...(tipoProdutoId && { tipoProdutoId }),
+            ...(tipoProdutoNome && {
+                tipo: {
+                    nome: {
+                        equals: tipoProdutoNome.trim(),
+                        mode: 'insensitive'
+                    }
+                }
+            })
+        };
 
         const [produtos, total] = await Promise.all([
             prismaClient.produto.findMany({
-                where: tipoProdutoId ? { tipoProdutoId } : undefined,
+                where,
                 include: {
                     tipo: {
                         include: {
@@ -73,7 +90,7 @@ class ListAllProdutoService {
                 }
             }),
             prismaClient.produto.count({
-                where: tipoProdutoId ? { tipoProdutoId } : undefined
+                where
             })
         ]);
 

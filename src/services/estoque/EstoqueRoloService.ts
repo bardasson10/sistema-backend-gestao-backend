@@ -208,7 +208,8 @@ class ListAllEstoqueRoloService {
         corId?: string,
         tipoMovimentacao?: string,
         dataInicio?: string,
-        dataFim?: string
+        dataFim?: string,
+        excludeTipoProdutoNome?: string
     ): Promise<PaginatedResponse<any>> {
         const { page: pageNumber, limit: pageLimit, skip } = parsePaginationParams(page, limit);
 
@@ -225,27 +226,85 @@ class ListAllEstoqueRoloService {
             } : {})
         };
 
-        const [rolos, total] = await Promise.all([
-            prismaClient.estoqueRolo.findMany({
-                where: {
-                    ...(tecidoId && { tecidoId }),
-                    ...(situacao && { situacao }),
-                    ...(estoqueRoloId && { id: estoqueRoloId }),
-                    ...((fornecedorId || corId) && {
-                        tecido: {
-                            ...(fornecedorId && { fornecedorId }),
-                            ...(corId && { corId })
+        const where: any = {
+            ...(tecidoId && { tecidoId }),
+            ...(situacao && { situacao }),
+            ...(estoqueRoloId && { id: estoqueRoloId }),
+            ...((fornecedorId || corId) && {
+                tecido: {
+                    ...(fornecedorId && { fornecedorId }),
+                    ...(corId && { corId })
+                }
+            }),
+            ...(tipoMovimentacao || dataInicioDate || dataFimDate ? {
+                movimentacoes: {
+                    some: filtroMovimentacao
+                }
+            } : {}),
+            pesoAtualKg: {
+                gt: 0
+            }
+        };
+
+        if (excludeTipoProdutoNome && excludeTipoProdutoNome.trim()) {
+            const nomeExclusao = excludeTipoProdutoNome.trim();
+            where.AND = [
+                {
+                    NOT: {
+                        lotes: {
+                            some: {
+                                lote: {
+                                    items: {
+                                        some: {
+                                            produto: {
+                                                is: {
+                                                    tipo: {
+                                                        is: {
+                                                            nome: {
+                                                                equals: nomeExclusao,
+                                                                mode: "insensitive"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }),
-                    ...(tipoMovimentacao || dataInicioDate || dataFimDate ? {
-                        movimentacoes: {
-                            some: filtroMovimentacao
-                        }
-                    } : {}),
-                    pesoAtualKg: {
-                        gt: 0
                     }
                 },
+                {
+                    NOT: {
+                        itemRolos: {
+                            some: {
+                                loteItem: {
+                                    is: {
+                                        produto: {
+                                            is: {
+                                                tipo: {
+                                                    is: {
+                                                        nome: {
+                                                            equals: nomeExclusao,
+                                                            mode: "insensitive"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ];
+        }
+
+        const [rolos, total] = await Promise.all([
+            prismaClient.estoqueRolo.findMany({
+                where,
                 include: {
                     tecido: {
                         include: {
@@ -260,27 +319,7 @@ class ListAllEstoqueRoloService {
                     createdAt: "desc"
                 }
             }),
-            prismaClient.estoqueRolo.count({
-                where: {
-                    ...(tecidoId && { tecidoId }),
-                    ...(situacao && { situacao }),
-                    ...(estoqueRoloId && { id: estoqueRoloId }),
-                    ...((fornecedorId || corId) && {
-                        tecido: {
-                            ...(fornecedorId && { fornecedorId }),
-                            ...(corId && { corId })
-                        }
-                    }),
-                    ...(tipoMovimentacao || dataInicioDate || dataFimDate ? {
-                        movimentacoes: {
-                            some: filtroMovimentacao
-                        }
-                    } : {}),
-                    pesoAtualKg: {
-                        gt: 0
-                    }
-                }
-            })
+            prismaClient.estoqueRolo.count({ where })
         ]);
 
         const response = createPaginatedResponse(rolos, total, pageNumber, pageLimit) as any;
@@ -322,7 +361,8 @@ class GetRelatorioEstoqueService {
         dataInicio?: string,
         dataFim?: string,
         _page?: number | string,
-        _limit?: number | string
+        _limit?: number | string,
+        excludeTipoProdutoNome?: string
     ) {
         const dataInicioDate = dataInicio ? parseDateStart(dataInicio) : undefined;
         const dataFimDate = dataFim ? parseDateEnd(dataFim) : undefined;
@@ -337,23 +377,81 @@ class GetRelatorioEstoqueService {
             } : {})
         };
 
+        const whereRolos: any = {
+            ...(tecidoId && { tecidoId }),
+            ...(situacao && { situacao }),
+            ...(estoqueRoloId && { id: estoqueRoloId }),
+            ...((fornecedorId || corId) && {
+                tecido: {
+                    ...(fornecedorId && { fornecedorId }),
+                    ...(corId && { corId })
+                }
+            }),
+            ...(tipoMovimentacao || dataInicioDate || dataFimDate ? {
+                movimentacoes: {
+                    some: filtroMovimentacao
+                }
+            } : {})
+        };
+
+        if (excludeTipoProdutoNome && excludeTipoProdutoNome.trim()) {
+            const nomeExclusao = excludeTipoProdutoNome.trim();
+            whereRolos.AND = [
+                {
+                    NOT: {
+                        lotes: {
+                            some: {
+                                lote: {
+                                    items: {
+                                        some: {
+                                            produto: {
+                                                is: {
+                                                    tipo: {
+                                                        is: {
+                                                            nome: {
+                                                                equals: nomeExclusao,
+                                                                mode: "insensitive"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    NOT: {
+                        itemRolos: {
+                            some: {
+                                loteItem: {
+                                    is: {
+                                        produto: {
+                                            is: {
+                                                tipo: {
+                                                    is: {
+                                                        nome: {
+                                                            equals: nomeExclusao,
+                                                            mode: "insensitive"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ];
+        }
+
         const rolos = await prismaClient.estoqueRolo.findMany({
-            where: {
-                ...(tecidoId && { tecidoId }),
-                ...(situacao && { situacao }),
-                ...(estoqueRoloId && { id: estoqueRoloId }),
-                ...((fornecedorId || corId) && {
-                    tecido: {
-                        ...(fornecedorId && { fornecedorId }),
-                        ...(corId && { corId })
-                    }
-                }),
-                ...(tipoMovimentacao || dataInicio || dataFim ? {
-                    movimentacoes: {
-                        some: filtroMovimentacao
-                    }
-                } : {})
-            },
+            where: whereRolos,
             include: {
                 tecido: true
             }
@@ -449,7 +547,8 @@ class GetResumoEstoqueRolosService {
         estoqueRoloId?: string,
         tipoMovimentacao?: string,
         dataInicio?: string,
-        dataFim?: string
+        dataFim?: string,
+        excludeTipoProdutoNome?: string
     ): Promise<PaginatedResponse<any>> {
         const { page: pageNumber, limit: pageLimit, skip } = parsePaginationParams(page, limit);
         const tipoMovimentacaoPadrao = tipoMovimentacao || "entrada";
@@ -520,7 +619,7 @@ class GetResumoEstoqueRolosService {
                 where: {
                     ...(estoqueRoloId && { estoqueRoloId }),
                     ...(filtroMovimentacao),
-                    ...((tecidoId || fornecedorId || corId) && {
+                    ...((tecidoId || fornecedorId || corId || excludeTipoProdutoNome) && {
                         rolo: {
                             is: {
                                 ...(tecidoId && { tecidoId }),
@@ -531,6 +630,60 @@ class GetResumoEstoqueRolosService {
                                             ...(corId && { corId })
                                         }
                                     }
+                                }),
+                                ...(excludeTipoProdutoNome && {
+                                    AND: [
+                                        {
+                                            NOT: {
+                                                lotes: {
+                                                    some: {
+                                                        lote: {
+                                                            items: {
+                                                                some: {
+                                                                    produto: {
+                                                                        is: {
+                                                                            tipo: {
+                                                                                is: {
+                                                                                    nome: {
+                                                                                        equals: excludeTipoProdutoNome.trim(),
+                                                                                        mode: "insensitive"
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            NOT: {
+                                                itemRolos: {
+                                                    some: {
+                                                        loteItem: {
+                                                            is: {
+                                                                produto: {
+                                                                    is: {
+                                                                        tipo: {
+                                                                            is: {
+                                                                                nome: {
+                                                                                    equals: excludeTipoProdutoNome.trim(),
+                                                                                    mode: "insensitive"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
                                 })
                             }
                         }
@@ -565,7 +718,7 @@ class GetResumoEstoqueRolosService {
             where: {
                 ...(estoqueRoloId && { estoqueRoloId }),
                 ...(filtroMovimentacao),
-                ...((tecidoId || fornecedorId || corId) && {
+                ...((tecidoId || fornecedorId || corId || excludeTipoProdutoNome) && {
                     rolo: {
                         is: {
                             ...(tecidoId && { tecidoId }),
@@ -576,6 +729,60 @@ class GetResumoEstoqueRolosService {
                                         ...(corId && { corId })
                                     }
                                 }
+                            }),
+                            ...(excludeTipoProdutoNome && {
+                                AND: [
+                                    {
+                                        NOT: {
+                                            lotes: {
+                                                some: {
+                                                    lote: {
+                                                        items: {
+                                                            some: {
+                                                                produto: {
+                                                                    is: {
+                                                                        tipo: {
+                                                                            is: {
+                                                                                nome: {
+                                                                                    equals: excludeTipoProdutoNome.trim(),
+                                                                                    mode: "insensitive"
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        NOT: {
+                                            itemRolos: {
+                                                some: {
+                                                    loteItem: {
+                                                        is: {
+                                                            produto: {
+                                                                is: {
+                                                                    tipo: {
+                                                                        is: {
+                                                                            nome: {
+                                                                                equals: excludeTipoProdutoNome.trim(),
+                                                                                mode: "insensitive"
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
                             })
                         }
                     }
