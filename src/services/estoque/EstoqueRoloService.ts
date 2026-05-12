@@ -50,6 +50,34 @@ function formatarDataLoteParaCodigo(dataLote: string): string {
     return `${dia}${mes}${ano.slice(-2)}`;
 }
 
+function parseDateStart(dateStr?: string | null): Date | undefined {
+    if (!dateStr) return undefined;
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+        throw new Error("Data inválida. Use o formato YYYY-MM-DD.");
+    }
+
+    const ano = Number(match[1]);
+    const mes = Number(match[2]);
+    const dia = Number(match[3]);
+
+    return new Date(Date.UTC(ano, mes - 1, dia, 0, 0, 0, 0));
+}
+
+function parseDateEnd(dateStr?: string | null): Date | undefined {
+    if (!dateStr) return undefined;
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) {
+        throw new Error("Data inválida. Use o formato YYYY-MM-DD.");
+    }
+
+    const ano = Number(match[1]);
+    const mes = Number(match[2]);
+    const dia = Number(match[3]);
+
+    return new Date(Date.UTC(ano, mes - 1, dia, 23, 59, 59, 999));
+}
+
 class CreateEstoqueRoloService {
     async execute({ tecidoId, dataLote, rolos, situacao, usuarioId }: ICreateEstoqueRoloRequest) {
         return prismaClient.$transaction(async (tx) => {
@@ -184,12 +212,15 @@ class ListAllEstoqueRoloService {
     ): Promise<PaginatedResponse<any>> {
         const { page: pageNumber, limit: pageLimit, skip } = parsePaginationParams(page, limit);
 
+        const dataInicioDate = dataInicio ? parseDateStart(dataInicio) : undefined;
+        const dataFimDate = dataFim ? parseDateEnd(dataFim) : undefined;
+
         const filtroMovimentacao = {
             ...(tipoMovimentacao && { tipoMovimentacao }),
-            ...(dataInicio || dataFim ? {
+            ...(dataInicioDate || dataFimDate ? {
                 createdAt: {
-                    ...(dataInicio && { gte: new Date(dataInicio) }),
-                    ...(dataFim && { lte: new Date(dataFim) })
+                    ...(dataInicioDate && { gte: dataInicioDate }),
+                    ...(dataFimDate && { lte: dataFimDate })
                 }
             } : {})
         };
@@ -206,7 +237,7 @@ class ListAllEstoqueRoloService {
                             ...(corId && { corId })
                         }
                     }),
-                    ...(tipoMovimentacao || dataInicio || dataFim ? {
+                    ...(tipoMovimentacao || dataInicioDate || dataFimDate ? {
                         movimentacoes: {
                             some: filtroMovimentacao
                         }
@@ -240,7 +271,7 @@ class ListAllEstoqueRoloService {
                             ...(corId && { corId })
                         }
                     }),
-                    ...(tipoMovimentacao || dataInicio || dataFim ? {
+                    ...(tipoMovimentacao || dataInicioDate || dataFimDate ? {
                         movimentacoes: {
                             some: filtroMovimentacao
                         }
@@ -293,12 +324,15 @@ class GetRelatorioEstoqueService {
         _page?: number | string,
         _limit?: number | string
     ) {
+        const dataInicioDate = dataInicio ? parseDateStart(dataInicio) : undefined;
+        const dataFimDate = dataFim ? parseDateEnd(dataFim) : undefined;
+
         const filtroMovimentacao = {
             ...(tipoMovimentacao && { tipoMovimentacao }),
-            ...(dataInicio || dataFim ? {
+            ...(dataInicioDate || dataFimDate ? {
                 createdAt: {
-                    ...(dataInicio && { gte: new Date(dataInicio) }),
-                    ...(dataFim && { lte: new Date(dataFim) })
+                    ...(dataInicioDate && { gte: dataInicioDate }),
+                    ...(dataFimDate && { lte: dataFimDate })
                 }
             } : {})
         };
@@ -421,12 +455,15 @@ class GetResumoEstoqueRolosService {
         const tipoMovimentacaoPadrao = tipoMovimentacao || "entrada";
         const resumoMovimentacaoSaida = tipoMovimentacaoPadrao === "saida";
 
+        const dataInicioDate = dataInicio ? parseDateStart(dataInicio) : undefined;
+        const dataFimDate = dataFim ? parseDateEnd(dataFim) : undefined;
+
         const filtroMovimentacao = {
             ...(tipoMovimentacaoPadrao && { tipoMovimentacao: tipoMovimentacaoPadrao }),
-            ...(dataInicio || dataFim ? {
+            ...(dataInicioDate || dataFimDate ? {
                 createdAt: {
-                    ...(dataInicio && { gte: new Date(dataInicio) }),
-                    ...(dataFim && { lte: new Date(dataFim) })
+                    ...(dataInicioDate && { gte: dataInicioDate }),
+                    ...(dataFimDate && { lte: dataFimDate })
                 }
             } : {})
         };
