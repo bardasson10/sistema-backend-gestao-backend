@@ -455,30 +455,6 @@ class ListAllConferenciaService {
             });
         }
 
-        const possuiFiltroExplcito = Boolean(
-            statusQualidade
-            || liberadoPagamento !== undefined
-            || isProducaoInterna !== undefined
-            || direcionamentoId
-            || faccaoId
-            || responsavelId
-            || dataInicio
-            || dataFim
-        );
-
-        if (!possuiFiltroExplcito) {
-            // Por padrão, não retornar conferências sem items (dados inexistentes).
-            andConditions.push({
-                items: {
-                    some: {
-                        id: {
-                            not: null
-                        }
-                    }
-                }
-            });
-        }
-
         const whereCondition: any = { AND: andConditions };
 
         const [conferencias, total] = await Promise.all([
