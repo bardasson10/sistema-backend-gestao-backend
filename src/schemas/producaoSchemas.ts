@@ -256,6 +256,20 @@ export const listConferenciaSchema = z.object({
     }).optional(),
 });
 
+export const listConferenciaAprovadasSchema = z.object({
+    query: z.object({
+        page: z.coerce.number().int().positive().optional(),
+        limit: z.coerce.number().int().positive().optional(),
+        liberadoPagamento: z.coerce.boolean().optional(),
+        isProducaoInterna: z.coerce.boolean().optional(),
+        direcionamentoId: z.uuid("ID de direcionamento inválido").optional(),
+        faccaoId: z.uuid("ID de facção inválido").optional(),
+        responsavelId: z.uuid("ID de responsável inválido").optional(),
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+    }).optional(),
+});
+
 // Schema de resposta para Conferência
 export const conferenciaResponseSchema = z.object({
     id: z.string().uuid(),

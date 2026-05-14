@@ -1319,6 +1319,39 @@ export function registerProducaoRoutes(registry: OpenAPIRegistry) {
         }
     });
 
+    // GET /conferencias/aprovadas - Listar conferências aprovadas e aprovadas com defeito
+    registry.registerPath({
+        method: 'get',
+        path: '/conferencias/aprovadas',
+        tags: [TAG_CONFERENCIAS],
+        summary: 'Listar conferências aprovadas e aprovadas com defeito',
+        description: 'Retorna somente conferências com status de qualidade aprovado ou aprovado_defeito.',
+        request: {
+            query: z.object({
+                page: z.coerce.number().int().positive().optional().describe('Número da página (padrão: 1)'),
+                limit: z.coerce.number().int().positive().optional().describe('Itens por página (padrão: 10)'),
+                liberadoPagamento: z.coerce.boolean().optional().describe('Filtro por liberação de pagamento'),
+                isProducaoInterna: z.coerce.boolean().optional().describe('Filtrar conferências internas/externas'),
+                direcionamentoId: z.string().uuid().optional().describe('Filtrar por direcionamento'),
+                faccaoId: z.string().uuid().optional().describe('Filtrar por facção do direcionamento'),
+                responsavelId: z.string().uuid().optional().describe('Filtrar por responsável da conferência'),
+                dataInicio: z.string().optional().describe('Data inicial (YYYY-MM-DD ou datetime ISO)'),
+                dataFim: z.string().optional().describe('Data final (YYYY-MM-DD ou datetime ISO)')
+            }).partial()
+        },
+        security: [{ bearerAuth: [] }],
+        responses: {
+            200: {
+                description: 'Lista de conferências com status aprovado ou aprovado_defeito',
+                content: {
+                    'application/json': {
+                        schema: paginatedConferenciasSchema
+                    }
+                }
+            }
+        }
+    });
+
     // GET /conferencias/{id} - Buscar conferência por ID
     registry.registerPath({
         method: 'get',

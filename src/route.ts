@@ -48,7 +48,7 @@ import {
 	ListarGradesSobraController,
 	ListRemessasProntasController
 } from "./controllers/producao/DirecionamentoController";
-import { CreateConferenciaController, ListAllConferenciaController, ListByIdConferenciaController, UpdateConferenciaController, DeleteConferenciaController, GetRelatorioProdutividadeController } from "./controllers/producao/ConferenciaController";
+import { CreateConferenciaController, ListAllConferenciaController, ListAprovadasConferenciaController, ListByIdConferenciaController, UpdateConferenciaController, DeleteConferenciaController, GetRelatorioProdutividadeController } from "./controllers/producao/ConferenciaController";
 import {
 	createFaccaoSchema,
 	updateFaccaoSchema,
@@ -65,6 +65,7 @@ import {
 	createConferenciaSchema,
 	updateConferenciaSchema,
 	listConferenciaSchema,
+	listConferenciaAprovadasSchema,
 	removeRoloLoteSchema
 } from "./schemas/producaoSchemas";
 
@@ -181,6 +182,7 @@ router.get("/lotes/:loteId/sobras", isAuthenticated, new ListarGradesSobraContro
 // ==================== CONFERÊNCIAS ====================
 router.post("/conferencias", isAuthenticated, validateSchema(createConferenciaSchema), new CreateConferenciaController().handle);
 router.get("/conferencias", isAuthenticated, validateSchema(listConferenciaSchema), new ListAllConferenciaController().handle);
+router.get("/conferencias/aprovadas", isAuthenticated, validateSchema(listConferenciaAprovadasSchema), new ListAprovadasConferenciaController().handle);
 router.get("/conferencias/:id", isAuthenticated, new ListByIdConferenciaController().handle);
 router.put("/conferencias/:id", isAuthenticated, validateSchema(updateConferenciaSchema), new UpdateConferenciaController().handle);
 router.delete("/conferencias/:id", isAuthenticated, isAdmin, new DeleteConferenciaController().handle);

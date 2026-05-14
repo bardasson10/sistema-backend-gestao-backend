@@ -7,6 +7,7 @@ const STATUS_APROVADO = "aprovado";
 const STATUS_APROVADO_PARCIAL = "aprovado_parcial";
 const STATUS_APROVADO_DEFEITO = "aprovado_defeito";
 
+const STATUS_APROVADOS = [STATUS_APROVADO, STATUS_APROVADO_PARCIAL, STATUS_APROVADO_DEFEITO] as const;
 const STATUS_FINAIS_SEM_EDICAO = [STATUS_APROVADO, STATUS_APROVADO_DEFEITO] as const;
 const STATUS_QUE_PERMITEM_PAGAMENTO_TRUE = [STATUS_APROVADO, STATUS_APROVADO_PARCIAL, STATUS_APROVADO_DEFEITO] as const;
 
@@ -396,7 +397,8 @@ class ListAllConferenciaService {
         dataInicio?: string,
         dataFim?: string,
         page?: number | string,
-        limit?: number | string
+        limit?: number | string,
+        somenteAprovadas?: boolean
     ): Promise<PaginatedResponse<IConferenciaResponse>> {
         const { page: pageNumber, limit: pageLimit, skip } = parsePaginationParams(page, limit);
 
@@ -404,10 +406,16 @@ class ListAllConferenciaService {
 
         if (statusQualidade) {
             andConditions.push({ status: statusQualidade });
+        } else if (somenteAprovadas) {
+            andConditions.push({
+                status: {
+                    in: [STATUS_APROVADO, STATUS_APROVADO_DEFEITO]
+                }
+            });
         } else {
             andConditions.push({
-                NOT: {
-                    status: STATUS_RECEBIDO
+                status: {
+                    notIn: [STATUS_APROVADO, STATUS_APROVADO_PARCIAL, STATUS_APROVADO_DEFEITO]
                 }
             });
         }
@@ -443,30 +451,6 @@ class ListAllConferenciaService {
                 dataConferencia: {
                     ...(dataInicio && { gte: new Date(dataInicio) }),
                     ...(dataFim && { lte: new Date(dataFim) })
-                }
-            });
-        }
-
-        const possuiFiltroExplcito = Boolean(
-            statusQualidade
-            || liberadoPagamento !== undefined
-            || isProducaoInterna !== undefined
-            || direcionamentoId
-            || faccaoId
-            || responsavelId
-            || dataInicio
-            || dataFim
-        );
-
-        if (!possuiFiltroExplcito) {
-            // Padrão: não mostrar conferências finalizadas com pagamento liberado.
-            andConditions.push({
-                NOT: {
-                    AND: [
-                        { status: { in: [STATUS_APROVADO, STATUS_APROVADO_DEFEITO] } },
-                        { liberadoPagamento: true },
-                        { isProducaoInterna: false }
-                    ]
                 }
             });
         }
@@ -534,8 +518,28 @@ class UpdateConferenciaService {
             throw new Error("Conferência não encontrada.");
         }
 
-        if (STATUS_FINAIS_SEM_EDICAO.includes((conferencia.status || "") as (typeof STATUS_FINAIS_SEM_EDICAO)[number])) {
-            throw new Error("Não é possível editar conferências com status final.");
+        const statusAtual = conferencia.status || "";
+        const statusSolicitado = statusQualidade ?? statusAtual;
+
+        if (
+            STATUS_APROVADOS.includes(statusAtual as (typeof STATUS_APROVADOS)[number])
+            && !STATUS_APROVADOS.includes(statusSolicitado as (typeof STATUS_APROVADOS)[number])
+        ) {
+            throw new Error("Conferências aprovadas podem trocar status apenas entre status de aprovação.");
+        }
+
+        if (STATUS_FINAIS_SEM_EDICAO.includes(statusAtual as (typeof STATUS_FINAIS_SEM_EDICAO)[number])) {
+            const tentativaEdicaoBloqueada = direcionamentoId !== undefined
+                || responsavelId !== undefined
+                || dataConferencia !== undefined
+                || liberadoPagamento !== undefined
+                || observacao !== undefined
+                || produtoSKU !== undefined
+                || items !== undefined;
+
+            if (tentativaEdicaoBloqueada) {
+                throw new Error("Conferências com status final permitem editar apenas o status para outros status aprovados.");
+            }
         }
 
         if (conferencia.status === STATUS_APROVADO_PARCIAL) {

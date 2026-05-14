@@ -69,6 +69,55 @@ class ListAllConferenciaController {
     }
 }
 
+class ListAprovadasConferenciaController {
+    async handle(req: Request, res: Response) {
+        const {
+            liberadoPagamento,
+            isProducaoInterna,
+            direcionamentoId,
+            faccaoId,
+            responsavelId,
+            dataInicio,
+            dataFim,
+            page,
+            limit
+        } = req.query;
+
+        const liberadoPagamentoFiltro =
+            typeof liberadoPagamento === "string"
+                ? liberadoPagamento === "true"
+                    ? true
+                    : liberadoPagamento === "false"
+                        ? false
+                        : undefined
+                : undefined;
+
+        const isProducaoInternaFiltro =
+            typeof isProducaoInterna === "string"
+                ? isProducaoInterna === "true"
+                    ? true
+                    : isProducaoInterna === "false"
+                        ? false
+                        : undefined
+                : undefined;
+
+        const conferencias = await new ListAllConferenciaService().execute(
+            undefined,
+            liberadoPagamentoFiltro,
+            isProducaoInternaFiltro,
+            direcionamentoId as string | undefined,
+            faccaoId as string | undefined,
+            responsavelId as string | undefined,
+            dataInicio as string | undefined,
+            dataFim as string | undefined,
+            page as string | number | undefined,
+            limit as string | number | undefined,
+            true
+        );
+        return res.json(conferencias);
+    }
+}
+
 class ListByIdConferenciaController {
     async handle(req: Request, res: Response) {
         const id = req.params.id as string 
@@ -114,4 +163,4 @@ class GetRelatorioProdutividadeController {
     }
 }
 
-export { CreateConferenciaController, ListAllConferenciaController, ListByIdConferenciaController, UpdateConferenciaController, DeleteConferenciaController, GetRelatorioProdutividadeController };
+export { CreateConferenciaController, ListAllConferenciaController, ListAprovadasConferenciaController, ListByIdConferenciaController, UpdateConferenciaController, DeleteConferenciaController, GetRelatorioProdutividadeController };
