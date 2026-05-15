@@ -541,13 +541,22 @@ class UpdateConferenciaService {
             );
 
             if (isStatusChangeRequested) {
+                // Se for alteração de status e o destino também for um status aprovado,
+                // permitimos a operação — porém devemos ignorar quaisquer outros campos
+                // enviados no payload para evitar alterações indesejadas.
                 if (!STATUS_APROVADOS.includes(statusSolicitado as (typeof STATUS_APROVADOS)[number])) {
                     throw new Error("Conferências aprovadas podem trocar status apenas entre status de aprovação.");
                 }
 
-                if (otherFieldChanges) {
-                    throw new Error("Conferências aprovadas permitem apenas trocar o status; outras alterações são proibidas.");
-                }
+                // Se for troca entre aprovados, simplesmente descartar outros campos para
+                // garantir que apenas o `status` será atualizado.
+                direcionamentoId = undefined;
+                responsavelId = undefined;
+                dataConferencia = undefined;
+                produtoSKU = undefined;
+                liberadoPagamento = undefined;
+                observacao = undefined;
+                items = undefined;
             } else {
                 if (otherFieldChanges) {
                     throw new Error("Conferências aprovadas permitem apenas trocar o status; outras alterações são proibidas.");
