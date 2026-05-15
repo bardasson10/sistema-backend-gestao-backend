@@ -524,26 +524,32 @@ class UpdateConferenciaService {
         // permitir apenas trocar o `status` entre os status aprovados.
         // Qualquer outra alteração (itens, produtoSKU, responsavel, etc.) é proibida.
         if (STATUS_APROVADOS.includes(statusAtual as (typeof STATUS_APROVADOS)[number])) {
-            const otherFieldsProvided = direcionamentoId !== undefined
-                || responsavelId !== undefined
-                || dataConferencia !== undefined
-                || liberadoPagamento !== undefined
-                || observacao !== undefined
-                || produtoSKU !== undefined
-                || items !== undefined;
-
             const isStatusChangeRequested = statusQualidade !== undefined;
+
+            // Verifica se qualquer outro campo realmente mudaria em relação ao estado atual.
+            const dataConferenciaAtualStr = conferencia.dataConferencia ? conferencia.dataConferencia.toISOString().split('T')[0] : null;
+            const dataConferenciaFornecidaStr = dataConferencia !== undefined ? (dataConferencia ? new Date(dataConferencia).toISOString().split('T')[0] : null) : undefined;
+
+            const otherFieldChanges = (
+                (direcionamentoId !== undefined && direcionamentoId !== conferencia.direcionamentoId) ||
+                (responsavelId !== undefined && responsavelId !== conferencia.responsavelId) ||
+                (dataConferenciaFornecidaStr !== undefined && dataConferenciaFornecidaStr !== dataConferenciaAtualStr) ||
+                (liberadoPagamento !== undefined && liberadoPagamento !== conferencia.liberadoPagamento) ||
+                (observacao !== undefined && observacao !== conferencia.observacao) ||
+                (produtoSKU !== undefined) ||
+                (items !== undefined)
+            );
 
             if (isStatusChangeRequested) {
                 if (!STATUS_APROVADOS.includes(statusSolicitado as (typeof STATUS_APROVADOS)[number])) {
                     throw new Error("Conferências aprovadas podem trocar status apenas entre status de aprovação.");
                 }
 
-                if (otherFieldsProvided) {
+                if (otherFieldChanges) {
                     throw new Error("Conferências aprovadas permitem apenas trocar o status; outras alterações são proibidas.");
                 }
             } else {
-                if (otherFieldsProvided) {
+                if (otherFieldChanges) {
                     throw new Error("Conferências aprovadas permitem apenas trocar o status; outras alterações são proibidas.");
                 }
             }
