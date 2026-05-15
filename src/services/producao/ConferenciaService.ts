@@ -8,7 +8,6 @@ const STATUS_APROVADO_PARCIAL = "aprovado_parcial";
 const STATUS_APROVADO_DEFEITO = "aprovado_defeito";
 
 const STATUS_APROVADOS = [STATUS_APROVADO, STATUS_APROVADO_PARCIAL, STATUS_APROVADO_DEFEITO] as const;
-const STATUS_FINAIS_SEM_EDICAO = [STATUS_APROVADO, STATUS_APROVADO_DEFEITO] as const;
 const STATUS_QUE_PERMITEM_PAGAMENTO_TRUE = [STATUS_APROVADO, STATUS_APROVADO_PARCIAL, STATUS_APROVADO_DEFEITO] as const;
 
 function roundCurrency(value: number): number {
@@ -521,15 +520,11 @@ class UpdateConferenciaService {
         const statusAtual = conferencia.status || "";
         const statusSolicitado = statusQualidade ?? statusAtual;
 
-        if (
-            STATUS_APROVADOS.includes(statusAtual as (typeof STATUS_APROVADOS)[number])
-            && !STATUS_APROVADOS.includes(statusSolicitado as (typeof STATUS_APROVADOS)[number])
-        ) {
-            throw new Error("Conferências aprovadas podem trocar status apenas entre status de aprovação.");
-        }
-
-        if (STATUS_FINAIS_SEM_EDICAO.includes(statusAtual as (typeof STATUS_FINAIS_SEM_EDICAO)[number])) {
-            const tentativaEdicaoBloqueada = direcionamentoId !== undefined
+        // Quando a conferência já está em qualquer status de aprovação,
+        // permitir apenas trocar o `status` entre os status aprovados.
+        // Qualquer outra alteração (itens, produtoSKU, responsavel, etc.) é proibida.
+        if (STATUS_APROVADOS.includes(statusAtual as (typeof STATUS_APROVADOS)[number])) {
+            const otherFieldsProvided = direcionamentoId !== undefined
                 || responsavelId !== undefined
                 || dataConferencia !== undefined
                 || liberadoPagamento !== undefined
@@ -537,19 +532,20 @@ class UpdateConferenciaService {
                 || produtoSKU !== undefined
                 || items !== undefined;
 
-            if (tentativaEdicaoBloqueada) {
-                throw new Error("Conferências com status final permitem editar apenas o status para outros status aprovados.");
-            }
-        }
+            const isStatusChangeRequested = statusQualidade !== undefined;
 
-        if (conferencia.status === STATUS_APROVADO_PARCIAL) {
-            const tentativaEdicaoBloqueada = direcionamentoId !== undefined
-                || responsavelId !== undefined
-                || dataConferencia !== undefined
-            || observacao !== undefined;
+            if (isStatusChangeRequested) {
+                if (!STATUS_APROVADOS.includes(statusSolicitado as (typeof STATUS_APROVADOS)[number])) {
+                    throw new Error("Conferências aprovadas podem trocar status apenas entre status de aprovação.");
+                }
 
-            if (tentativaEdicaoBloqueada) {
-                throw new Error("Conferências em status 'aprovado_parcial' permitem editar apenas status e itens.");
+                if (otherFieldsProvided) {
+                    throw new Error("Conferências aprovadas permitem apenas trocar o status; outras alterações são proibidas.");
+                }
+            } else {
+                if (otherFieldsProvided) {
+                    throw new Error("Conferências aprovadas permitem apenas trocar o status; outras alterações são proibidas.");
+                }
             }
         }
 
